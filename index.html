@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-slate-950 text-white select-none">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Retro Neon Playground & Clicker</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Outfit:wght@300;400;600&display=swap" rel="stylesheet">
+    
+    <style>
+        body {
+            font-family: 'Outfit', sans-serif;
+            overflow-x: hidden;
+            text-transform: lowercase;
+        }
+        .font-arcade {
+            font-family: 'Orbitron', sans-serif;
+        }
+        /* Custom Neon Glow Effects */
+        .glow-pink {
+            text-shadow: 0 0 10px rgba(244, 63, 94, 0.7), 0 0 20px rgba(244, 63, 94, 0.5);
+        }
+        .glow-cyan {
+            text-shadow: 0 0 10px rgba(6, 182, 212, 0.7), 0 0 20px rgba(6, 182, 212, 0.5);
+        }
+        .box-glow-pink {
+            box-shadow: 0 0 15px rgba(244, 63, 94, 0.4), inset 0 0 15px rgba(244, 63, 94, 0.2);
+        }
+        .box-glow-cyan {
+            box-shadow: 0 0 15px rgba(6, 182, 212, 0.4), inset 0 0 15px rgba(6, 182, 212, 0.2);
+        }
+        /* Floating score animation */
+        @keyframes floatUp {
+            0% { opacity: 1; transform: translateY(0) scale(1); }
+            100% { opacity: 0; transform: translateY(-60px) scale(1.3); }
+        }
+        .float-text {
+            position: absolute;
+            pointer-events: none;
+            animation: floatUp 0.8s ease-out forwards;
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 900;
+        }
+        /* Scanline effect */
+        .scanlines {
+            background: linear-gradient(
+                rgba(18, 16, 16, 0) 50%, 
+                rgba(0, 0, 0, 0.25) 50%
+            );
+            background-size: 100% 4px;
+        }
+    </style>
+</head>
+<body class="h-full flex flex-col justify-between bg-slate-950 text-slate-100 scanlines relative overflow-hidden lowercase">
+
+    <header class="p-4 border-b border-slate-800 bg-slate-900/80 backdrop-blur-md z-10 flex flex-wrap justify-between items-center gap-4">
+        <div class="flex items-center space-x-3">
+            <i class="fa-solid font-arcade text-3xl text-rose-500 fa-gamepad animate-pulse"></i>
+            <div>
+                <h1 class="text-2xl font-black tracking-wider font-arcade bg-clip-text text-transparent bg-gradient-to-r from-rose-500 via-purple-500 to-cyan-400">
+                    nyahahaha
+                </h1>
+                <p class="text-xs text-slate-400">this is me trying</p>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-4">
+            <!-- Audio Toggle Button -->
+            <button id="soundToggle" class="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 transition flex items-center gap-2 border border-slate-700">
+                <i class="fa-solid fa-volume-high text-cyan-400" id="soundIcon"></i>
+                <span class="text-xs font-semibold" id="soundStatus">audio on</span>
+            </button>
+            
+            <!-- Combo Counter Display -->
+            <div class="px-4 py-2 rounded-xl bg-slate-900 border border-purple-500/30 flex items-center gap-2">
+                <span class="text-xs text-slate-400 font-arcade">combo</span>
+                <span id="comboText" class="text-xl font-black font-arcade text-purple-400">x1</span>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-1 max-w-7xl w-full mx-auto p-4 grid grid-cols-1 lg:grid-cols-4 gap-6 z-10">
+        
+        <!-- Left Stats Panel -->
+        <div class="lg:col-span-1 flex flex-col gap-4">
+            <!-- Score Card -->
+            <div class="bg-slate-900/80 border border-slate-800 p-5 rounded-2xl backdrop-blur box-glow-pink">
+                <div class="text-xs font-arcade text-rose-400 tracking-widest mb-1">energy crystals</div>
+                <div id="scoreDisplay" class="text-4xl font-black font-arcade text-white tracking-wider glow-pink">0</div>
+                <div class="text-xs text-slate-400 mt-2 flex justify-between">
+                    <span>per second: <strong id="cpsDisplay" class="text-cyan-400">0</strong></span>
+                    <span>click power: <strong id="clickPowerDisplay" class="text-rose-400">1</strong></span>
+                </div>
+            </div>
+
+            <!-- Mini Game Mode Selector -->
+            <div class="bg-slate-900/80 border border-slate-800 p-4 rounded-2xl backdrop-blur">
+                <h3 class="text-sm font-arcade text-cyan-400 mb-3 flex items-center gap-2">
+                    <i class="fa-solid fa-sliders"></i> physics mode
+                </h3>
+                <div class="grid grid-cols-2 gap-2">
+                    <button data-mode="explode" class="mode-btn active p-2 rounded-xl border border-cyan-500 bg-cyan-500/20 text-cyan-300 font-semibold text-xs transition text-center hover:bg-cyan-500/30">
+                        <i class="fa-solid fa-burst block text-base mb-1"></i> explode
+                    </button>
+                    <button data-mode="gravity" class="mode-btn p-2 rounded-xl border border-slate-700 bg-slate-800/50 text-slate-400 font-semibold text-xs transition text-center hover:bg-slate-800">
+                        <i class="fa-solid fa-magnet block text-base mb-1"></i> gravity well
+                    </button>
+                    <button data-mode="fountain" class="mode-btn p-2 rounded-xl border border-slate-700 bg-slate-800/50 text-slate-400 font-semibold text-xs transition text-center hover:bg-slate-800">
+                        <i class="fa-solid fa-volcano block text-base mb-1"></i> fountain
+                    </button>
+                    <button data-mode="bouncing" class="mode-btn p-2 rounded-xl border border-slate-700 bg-slate-800/50 text-slate-400 font-semibold text-xs transition text-center hover:bg-slate-800">
+                        <i class="fa-solid fa-circle-dot block text-base mb-1"></i> chaos orbs
+                    </button>
+                </div>
+            </div>
+
+            <!-- Controls Info -->
+            <div class="bg-slate-900/50 border border-slate-800/80 p-4 rounded-2xl text-xs text-slate-400 space-y-2">
+                <p class="flex items-center gap-2"><i class="fa-solid fa-hand-pointer text-rose-400"></i> click/tap canvas to generate energy</p>
+                <p class="flex items-center gap-2"><i class="fa-solid fa-wand-magic-sparkles text-cyan-400"></i> drag mouse to spray particles</p>
+                <p class="flex items-center gap-2"><i class="fa-solid fa-bolt text-purple-400"></i> maintain speed for combo bonuses</p>
+            </div>
+        </div>
+
+        <!-- Center Canvas Area -->
+        <div class="lg:col-span-2 relative flex flex-col items-center justify-center min-h-[380px] lg:min-h-full rounded-2xl overflow-hidden border border-slate-800 bg-slate-950/90 shadow-2xl">
+            <canvas id="gameCanvas" class="w-full h-full absolute inset-0 cursor-crosshair"></canvas>
+            <div id="clickContainer" class="absolute inset-0 pointer-events-none"></div>
+            
+            <!-- Overlay Guide -->
+            <div id="guideText" class="pointer-events-none text-center opacity-60 transition-opacity duration-500">
+                <p class="font-arcade text-slate-400 text-lg tracking-widest animate-bounce">click anywhere</p>
+                <p class="text-xs text-slate-500">unleash neon fireworks & score energy</p>
+            </div>
+        </div>
+
+        <!-- Right Upgrades Shop -->
+        <div class="lg:col-span-1 flex flex-col gap-3">
+            <div class="bg-slate-900/80 border border-slate-800 p-4 rounded-2xl backdrop-blur flex-1 flex flex-col">
+                <h3 class="text-sm font-arcade text-rose-400 mb-3 flex items-center gap-2">
+                    <i class="fa-solid fa-shop"></i> power upgrades
+                </h3>
+                <div class="space-y-3 overflow-y-auto max-h-[380px] pr-1 flex-1">
+                    
+                    <!-- Upgrade 1: Click Power -->
+                    <button id="buyClick" class="w-full text-left p-3 rounded-xl border border-slate-800 bg-slate-900/90 hover:border-rose-500/50 transition flex items-center justify-between group disabled:opacity-40 disabled:cursor-not-allowed">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-lg bg-rose-500/10 border border-rose-500/30 flex items-center justify-center text-rose-400 group-hover:scale-110 transition-transform">
+                                <i class="fa-solid fa-bolt text-lg"></i>
+                            </div>
+                            <div>
+                                <div class="text-xs font-bold text-slate-200">hyper clicks</div>
+                                <div class="text-[10px] text-slate-400">+1 per click</div>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-xs font-arcade text-rose-400" id="costClick">15</div>
+                            <div class="text-[9px] text-slate-500">cr</div>
+                        </div>
+                    </button>
+
+                    <!-- Upgrade 2: Auto Generator -->
+                    <button id="buyAuto" class="w-full text-left p-3 rounded-xl border border-slate-800 bg-slate-900/90 hover:border-cyan-500/50 transition flex items-center justify-between group disabled:opacity-40 disabled:cursor-not-allowed">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-lg bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 group-hover:scale-110 transition-transform">
+                                <i class="fa-solid fa-atom text-lg"></i>
+                            </div>
+                            <div>
+                                <div class="text-xs font-bold text-slate-200">plasma drone</div>
+                                <div class="text-[10px] text-slate-400">+2 auto/sec</div>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-xs font-arcade text-cyan-400" id="costAuto">50</div>
+                            <div class="text-[9px] text-slate-500">cr</div>
+                        </div>
+                    </button>
+
+                    <!-- Upgrade 3: Particle Multiplier -->
+                    <button id="buyMulti" class="w-full text-left p-3 rounded-xl border border-slate-800 bg-slate-900/90 hover:border-purple-500/50 transition flex items-center justify-between group disabled:opacity-40 disabled:cursor-not-allowed">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-lg bg-purple-500/10 border border-purple-500/30 flex items-center justify-center text-purple-400 group-hover:scale-110 transition-transform">
+                                <i class="fa-solid fa-sparkles text-lg"></i>
+                            </div>
+                            <div>
+                                <div class="text-xs font-bold text-slate-200">super nova</div>
+                                <div class="text-[10px] text-slate-400">+5 particles/click</div>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-xs font-arcade text-purple-400" id="costMulti">100</div>
+                            <div class="text-[9px] text-slate-500">cr</div>
+                        </div>
+                    </button>
+
+                    <!-- Reset Button -->
+                    <button id="resetBtn" class="w-full mt-4 p-2 rounded-xl border border-red-500/30 bg-red-500/10 hover:bg-red-500/20 text-red-400 text-xs font-semibold transition text-center">
+                        <i class="fa-solid fa-rotate-right mr-1"></i> reset game progress
+                    </button>
+
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <footer class="p-3 border-t border-slate-900 bg-slate-950 text-center text-xs text-slate-600 z-10">
+        built with html5 canvas, web audio api & tailwind css
+    </footer>
+
+    <script>
+        class SoundEffects {
+            constructor() {
+                this.ctx = null;
+                this.enabled = true;
+            }
+
+            init() {
+                if (!this.ctx) {
+                    this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+            }
+
+            playPop(freq = 440) {
+                if (!this.enabled) return;
+                this.init();
+                
+                try {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(freq * 2.5, this.ctx.currentTime + 0.08);
+                    
+                    gain.gain.setValueAtTime(0.15, this.ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.08);
+                    
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    
+                    osc.start();
+                    osc.stop(this.ctx.currentTime + 0.08);
+                } catch (e) {}
+            }
+
+            playUpgrade() {
+                if (!this.enabled) return;
+                this.init();
+
+                try {
+                    const now = this.ctx.currentTime;
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(300, now);
+                    osc.frequency.setValueAtTime(500, now + 0.08);
+                    osc.frequency.setValueAtTime(800, now + 0.16);
+
+                    gain.gain.setValueAtTime(0.2, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
+
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+
+                    osc.start(now);
+                    osc.stop(now + 0.25);
+                } catch(e) {}
+            }
+        }
+
+        const sound = new SoundEffects();
+
+        const state = {
+            score: 0,
+            cps: 0,
+            clickPower: 1,
+            particleCount: 15,
+            combo: 1,
+            lastClickTime: Date.now(),
+            clickTimes: [],
+            mode: 'explode',
+            
+            // Costs
+            costClick: 15,
+            costAuto: 50,
+            costMulti: 100
+        };
+
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const clickContainer = document.getElementById('clickContainer');
+        const guideText = document.getElementById('guideText');
+
+        let particles = [];
+        let mouseX = 0;
+        let mouseY = 0;
+        let isMouseDown = false;
+
+        // Resize Canvas dynamically
+        function resizeCanvas() {
+            canvas.width = canvas.parentElement.clientWidth;
+            canvas.height = canvas.parentElement.clientHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        class Particle {
+            constructor(x, y, mode) {
+                this.x = x;
+                this.y = y;
+                this.mode = mode;
+                
+                // Color spectrum
+                const hues = [340, 190, 270, 45, 160];
+                this.hue = hues[Math.floor(Math.random() * hues.length)];
+                this.color = `hsl(${this.hue}, 100%, 60%)`;
+                
+                this.size = Math.random() * 6 + 3;
+                this.alpha = 1;
+                this.decay = Math.random() * 0.015 + 0.005;
+
+                const angle = Math.random() * Math.PI * 2;
+                const speed = Math.random() * 8 + 2;
+
+                if (mode === 'fountain') {
+                    this.vx = (Math.random() - 0.5) * 4;
+                    this.vy = -(Math.random() * 8 + 6);
+                } else if (mode === 'bouncing') {
+                    this.vx = (Math.random() - 0.5) * 10;
+                    this.vy = (Math.random() - 0.5) * 10;
+                    this.decay = 0.002; // last longer
+                } else {
+                    this.vx = Math.cos(angle) * speed;
+                    this.vy = Math.sin(angle) * speed;
+                }
+            }
+
+            update() {
+                if (this.mode === 'gravity') {
+                    // Pull towards current mouse pointer
+                    const dx = mouseX - this.x;
+                    const dy = mouseY - this.y;
+                    const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+                    this.vx += (dx / dist) * 0.4;
+                    this.vy += (dy / dist) * 0.4;
+                    this.vx *= 0.95;
+                    this.vy *= 0.95;
+                } else if (this.mode === 'fountain') {
+                    this.vy += 0.25; // gravity pull
+                } else if (this.mode === 'bouncing') {
+                    // Wall bouncing logic
+                    if (this.x + this.vx < 0 || this.x + this.vx > canvas.width) this.vx *= -0.9;
+                    if (this.y + this.vy < 0 || this.y + this.vy > canvas.height) this.vy *= -0.9;
+                }
+
+                this.x += this.vx;
+                this.y += this.vy;
+                this.alpha -= this.decay;
+            }
+
+            draw() {
+                ctx.save();
+                ctx.globalAlpha = Math.max(0, this.alpha);
+                ctx.fillStyle = this.color;
+                ctx.shadowColor = this.color;
+                ctx.shadowBlur = 10;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            }
+        }
+
+        function triggerBurst(x, y) {
+            // Hide guide on first click
+            if (guideText) guideText.style.opacity = '0';
+
+            // Calculate combo rate
+            const now = Date.now();
+            state.clickTimes.push(now);
+            state.clickTimes = state.clickTimes.filter(t => now - t < 2000); // last 2 seconds
+            
+            state.combo = Math.min(5, Math.floor(state.clickTimes.length / 3) + 1);
+            document.getElementById('comboText').textContent = `x${state.combo}`;
+
+            // Add score
+            const gainedScore = state.clickPower * state.combo;
+            state.score += gainedScore;
+            
+            // Play Audio
+            const pitch = 300 + (state.combo * 100) + Math.random() * 100;
+            sound.playPop(pitch);
+
+            // Spawn Particles
+            for (let i = 0; i < state.particleCount; i++) {
+                particles.push(new Particle(x, y, state.mode));
+            }
+
+            // Create floating text popup
+            createFloatingText(x, y, `+${gainedScore}`);
+
+            updateUI();
+        }
+
+        function createFloatingText(x, y, text) {
+            const el = document.createElement('div');
+            el.className = 'float-text text-xl font-bold';
+            
+            // Dynamic text color matching combo level
+            const colors = ['text-rose-400', 'text-cyan-400', 'text-purple-400', 'text-amber-400', 'text-emerald-400'];
+            el.classList.add(colors[state.combo - 1] || 'text-rose-400');
+            
+            el.textContent = text;
+            el.style.left = `${x}px`;
+            el.style.top = `${y}px`;
+            
+            clickContainer.appendChild(el);
+            setTimeout(() => el.remove(), 800);
+        }
+
+        canvas.addEventListener('mousedown', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            mouseX = e.clientX - rect.left;
+            mouseY = e.clientY - rect.top;
+            isMouseDown = true;
+            triggerBurst(mouseX, mouseY);
+        });
+
+        canvas.addEventListener('mousemove', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            mouseX = e.clientX - rect.left;
+            mouseY = e.clientY - rect.top;
+
+            if (isMouseDown && Math.random() < 0.4) {
+                triggerBurst(mouseX, mouseY);
+            }
+        });
+
+        window.addEventListener('mouseup', () => isMouseDown = false);
+
+        // Mobile Touch Support
+        canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            const rect = canvas.getBoundingClientRect();
+            const touch = e.touches[0];
+            mouseX = touch.clientX - rect.left;
+            mouseY = touch.clientY - rect.top;
+            triggerBurst(mouseX, mouseY);
+        });
+
+        document.getElementById('buyClick').addEventListener('click', () => {
+            if (state.score >= state.costClick) {
+                state.score -= state.costClick;
+                state.clickPower += 1;
+                state.costClick = Math.floor(state.costClick * 1.6);
+                sound.playUpgrade();
+                updateUI();
+            }
+        });
+
+        document.getElementById('buyAuto').addEventListener('click', () => {
+            if (state.score >= state.costAuto) {
+                state.score -= state.costAuto;
+                state.cps += 2;
+                state.costAuto = Math.floor(state.costAuto * 1.8);
+                sound.playUpgrade();
+                updateUI();
+            }
+        });
+
+        document.getElementById('buyMulti').addEventListener('click', () => {
+            if (state.score >= state.costMulti) {
+                state.score -= state.costMulti;
+                state.particleCount += 5;
+                state.costMulti = Math.floor(state.costMulti * 2.2);
+                sound.playUpgrade();
+                updateUI();
+            }
+        });
+
+        // Mode Switching
+        document.querySelectorAll('.mode-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                document.querySelectorAll('.mode-btn').forEach(b => {
+                    b.classList.remove('active', 'border-cyan-500', 'bg-cyan-500/20', 'text-cyan-300');
+                    b.classList.add('border-slate-700', 'bg-slate-800/50', 'text-slate-400');
+                });
+
+                const target = e.currentTarget;
+                target.classList.add('active', 'border-cyan-500', 'bg-cyan-500/20', 'text-cyan-300');
+                target.classList.remove('border-slate-700', 'bg-slate-800/50', 'text-slate-400');
+
+                state.mode = target.dataset.mode;
+                sound.playPop(600);
+            });
+        });
+
+        // Audio Toggle Button
+        const soundBtn = document.getElementById('soundToggle');
+        const soundIcon = document.getElementById('soundIcon');
+        const soundStatus = document.getElementById('soundStatus');
+
+        soundBtn.addEventListener('click', () => {
+            sound.enabled = !sound.enabled;
+            if (sound.enabled) {
+                soundIcon.className = 'fa-solid fa-volume-high text-cyan-400';
+                soundStatus.textContent = 'audio on';
+            } else {
+                soundIcon.className = 'fa-solid fa-volume-xmark text-slate-500';
+                soundStatus.textContent = 'audio off';
+            }
+        });
+
+        // Reset progress
+        document.getElementById('resetBtn').addEventListener('click', () => {
+            state.score = 0;
+            state.cps = 0;
+            state.clickPower = 1;
+            state.particleCount = 15;
+            state.costClick = 15;
+            state.costAuto = 50;
+            state.costMulti = 100;
+            particles = [];
+            updateUI();
+        });
+
+        function updateUI() {
+            document.getElementById('scoreDisplay').textContent = Math.floor(state.score);
+            document.getElementById('cpsDisplay').textContent = state.cps;
+            document.getElementById('clickPowerDisplay').textContent = state.clickPower;
+
+            // Costs
+            document.getElementById('costClick').textContent = state.costClick;
+            document.getElementById('costAuto').textContent = state.costAuto;
+            document.getElementById('costMulti').textContent = state.costMulti;
+
+            // Disabled states
+            document.getElementById('buyClick').disabled = state.score < state.costClick;
+            document.getElementById('buyAuto').disabled = state.score < state.costAuto;
+            document.getElementById('buyMulti').disabled = state.score < state.costMulti;
+        }
+
+        let lastTime = performance.now();
+
+        function animate(currentTime) {
+            requestAnimationFrame(animate);
+
+            const delta = (currentTime - lastTime) / 1000;
+            lastTime = currentTime;
+
+            // Passive Auto Income
+            if (state.cps > 0) {
+                state.score += state.cps * delta;
+                updateUI();
+            }
+
+            // Canvas Trails
+            ctx.fillStyle = 'rgba(2, 6, 23, 0.25)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Update & Render Particles
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const p = particles[i];
+                p.update();
+                p.draw();
+
+                if (p.alpha <= 0) {
+                    particles.splice(i, 1);
+                }
+            }
+        }
+
+        // Start animation after full load
+        window.onload = () => {
+            updateUI();
+            requestAnimationFrame(animate);
+        };
+    </script>
+</body>
+</html>
